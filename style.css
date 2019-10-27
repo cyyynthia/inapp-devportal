@@ -1,0 +1,15 @@
+.inapp-devportal .channel-2QD9_O[href='/activity#test'] {
+  color: var(--interactive-active);
+}
+
+.inapp-devportal .channel-2QD9_O[href='/activity#test'] .layout-2DM8Md {
+  background-color: var(--background-modifier-selected);
+}
+
+.inapp-devportal .selected-aXhQR6 {
+  color: var(--channels-default)
+}
+
+.inapp-devportal .selected-aXhQR6 .layout-2DM8Md {
+  background-color: transparent;
+}
