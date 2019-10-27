@@ -56,22 +56,28 @@ module.exports = class InAppDevPortal extends Plugin {
     if (!this.inDevPortal) {
       const { selected } = await getModule([ 'selected', 'nameAndDecorators' ]);
       const element = document.querySelector(`.${selected.replace(/ /g, '.')}`);
-      const callback = () => {
-        element.removeEventListener('click', callback);
-        this.closeDevPortal();
-      };
-      element.addEventListener('click', callback);
+      if (element) {
+        const callback = () => {
+          element.removeEventListener('click', callback);
+          this.closeDevPortal();
+        };
+        element.addEventListener('click', callback);
+      }
       document.body.classList.add('inapp-devportal');
-      BrowserWindow.getFocusedWindow().addBrowserView(this.devPortalView);
+      BrowserWindow.getFocusedWindow().setBrowserView(this.devPortalView);
       this._resizeView();
       this.inDevPortal = true;
     }
   }
 
   closeDevPortal () {
+    if (BrowserWindow.getFocusedWindow().getBrowserView()) {
+      BrowserWindow.getFocusedWindow().removeBrowserView(
+        BrowserWindow.getFocusedWindow().getBrowserView()
+      );
+    }
     if (this.inDevPortal) {
       document.body.classList.remove('inapp-devportal');
-      BrowserWindow.getFocusedWindow().removeBrowserView(this.devPortalView);
       this.inDevPortal = false;
     }
   }
@@ -83,7 +89,7 @@ module.exports = class InAppDevPortal extends Plugin {
     const PrivateChannelsList = ownerInstance._reactInternalFiber.return.return.child.child.child.child.memoizedProps.children[1].type;
     inject('devportal-item', PrivateChannelsList.prototype, 'render', (_, res) => {
       res.props.children = [
-        ...res.props.children.slice(0, 4),
+        ...res.props.children.slice(0, res.props.children.length - 1),
         React.createElement(PrivateChannel.LinkButton, {
           className: 'developer-portal',
           iconName: 'OverlayOn',
