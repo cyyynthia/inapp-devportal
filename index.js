@@ -88,7 +88,7 @@ module.exports = class InAppDevPortal extends Plugin {
     const ownerInstance = getOwnerInstance(await waitFor(`.${privateChannels.replace(/ /g, '.')}`));
     const PrivateChannelsList = ownerInstance._reactInternalFiber.return.return.child.child.child.child.memoizedProps.children[1].type;
     inject('devportal-item', PrivateChannelsList.prototype, 'render', (_, res) => {
-      const index = res.props.children.map(c => c.type.displayName.includes('Friends')).indexOf(true) + 1;
+      const index = res.props.children.map(c => c && c.type && c.type.displayName && c.type.displayName.includes('FriendsButtonInner')).indexOf(true) + 1;
       res.props.children = [
         ...res.props.children.slice(0, index),
         React.createElement(PrivateChannel.LinkButton, {
