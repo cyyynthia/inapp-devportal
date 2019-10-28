@@ -88,8 +88,9 @@ module.exports = class InAppDevPortal extends Plugin {
     const ownerInstance = getOwnerInstance(await waitFor(`.${privateChannels.replace(/ /g, '.')}`));
     const PrivateChannelsList = ownerInstance._reactInternalFiber.return.return.child.child.child.child.memoizedProps.children[1].type;
     inject('devportal-item', PrivateChannelsList.prototype, 'render', (_, res) => {
+      const index = res.props.children.map(c => c.type.displayName.includes('Friends')).indexOf(true) + 1;
       res.props.children = [
-        ...res.props.children.slice(0, res.props.children.length - 1),
+        ...res.props.children.slice(0, index),
         React.createElement(PrivateChannel.LinkButton, {
           className: 'developer-portal',
           iconName: 'OverlayOn',
@@ -97,11 +98,13 @@ module.exports = class InAppDevPortal extends Plugin {
           text: 'Developer Portal',
           onClick: (e) => {
             e.preventDefault();
-            document.title = 'Discord Developer Portal';
-            setImmediate(() => this.openDevPortal());
+            setTimeout(() => {
+              document.title = 'Discord Developer Portal';
+              setImmediate(() => this.openDevPortal());
+            }, 100);
           }
         }),
-        res.props.children[4]
+        res.props.children.slice(index)
       ];
       return res;
     });
