@@ -1,85 +1,22 @@
-const { resolve } = require('path');
-const { remote: { BrowserWindow, BrowserView } } = require('electron');
 const { React, getModule, constants: { MarketingURLs: { DEVELOPER_PORTAL } }, instance: { cache: moduleCache } } = require('powercord/webpack');
 const { Plugin } = require('powercord/entities');
 const { waitFor, getOwnerInstance } = require('powercord/util');
 const { inject, uninject } = require('powercord/injector');
 
 module.exports = class InAppDevPortal extends Plugin {
-  constructor () {
-    super();
-    this.inDevPortal = false;
-    this._navCallback = () => {
-      this.closeDevPortal();
-    };
-    this._devtoolsCallback = () => {
-      setTimeout(this._resizeView.bind(this), 150);
-    };
-  }
-
-  get devPortalView () {
-    if (!this._devPortalView) {
-      const view = new BrowserView();
-      view.setAutoResize({
-        width: true,
-        height: true
-      });
-      view.webContents.loadURL(`https:${DEVELOPER_PORTAL}`);
-      this._devPortalView = view;
-    }
-    return this._devPortalView;
-  }
-
   startPlugin () {
-    this.loadCSS(resolve(__dirname, 'style.css'));
     this._injectDevPortal();
-    const wc = BrowserWindow.getFocusedWindow().webContents;
-    wc.on('page-title-updated', this._navCallback);
-    wc.on('devtools-opened', this._devtoolsCallback);
-    wc.on('devtools-closed', this._devtoolsCallback);
+    this.registerRoute('/inapp-devportal', () => React.createElement('iframe', {
+      src: DEVELOPER_PORTAL,
+      style: {
+        width: '100%',
+        height: '100%'
+      }
+    }));
   }
 
   pluginWillUnload () {
     uninject('devportal-item');
-    const wc = BrowserWindow.getFocusedWindow().webContents;
-    wc.off('page-title-updated', this._navCallback);
-    wc.off('devtools-opened', this._devtoolsCallback);
-    wc.off('devtools-closed', this._devtoolsCallback);
-    this.closeDevPortal();
-    if (this._devPortalView) {
-      this._devPortalView.destroy();
-      delete this._devPortalView;
-    }
-  }
-
-  async openDevPortal () {
-    if (!this.inDevPortal) {
-      const { selected } = await getModule([ 'selected', 'nameAndDecorators' ]);
-      const element = document.querySelector(`.${selected.replace(/ /g, '.')}`);
-      if (element) {
-        const callback = () => {
-          element.removeEventListener('click', callback);
-          this.closeDevPortal();
-        };
-        element.addEventListener('click', callback);
-      }
-      document.body.classList.add('inapp-devportal');
-      BrowserWindow.getFocusedWindow().setBrowserView(this.devPortalView);
-      this._resizeView();
-      this.inDevPortal = true;
-    }
-  }
-
-  closeDevPortal () {
-    if (BrowserWindow.getFocusedWindow().getBrowserView()) {
-      BrowserWindow.getFocusedWindow().removeBrowserView(
-        BrowserWindow.getFocusedWindow().getBrowserView()
-      );
-    }
-    if (this.inDevPortal) {
-      document.body.classList.remove('inapp-devportal');
-      this.inDevPortal = false;
-    }
   }
 
   async _injectDevPortal () {
@@ -88,38 +25,24 @@ module.exports = class InAppDevPortal extends Plugin {
     const ownerInstance = getOwnerInstance(await waitFor(`.${privateChannels.replace(/ /g, '.')}`));
     const PrivateChannelsList = ownerInstance._reactInternalFiber.return.return.child.child.child.child.memoizedProps.children[1].type;
     inject('devportal-item', PrivateChannelsList.prototype, 'render', (_, res) => {
+      const selected = window.location.pathname === '/_powercord/inapp-devportal';
       const index = res.props.children.map(c => c && c.type && c.type.displayName && c.type.displayName.includes('FriendsButtonInner')).indexOf(true) + 1;
+      if (selected) {
+        res.props.children.forEach(c => {
+          c.props.selected = false;
+        });
+      }
       res.props.children = [
         ...res.props.children.slice(0, index),
         React.createElement(PrivateChannel.LinkButton, {
-          className: 'developer-portal',
           iconName: 'OverlayOn',
-          route: '/activity#test',
+          route: '/_powercord/inapp-devportal',
           text: 'Developer Portal',
-          onClick: (e) => {
-            e.preventDefault();
-            setTimeout(() => {
-              document.title = 'Discord Developer Portal';
-              setImmediate(() => this.openDevPortal());
-            }, 100);
-          }
+          selected
         }),
         res.props.children.slice(index)
       ];
       return res;
     });
-  }
-
-  _resizeView () {
-    if (this._devPortalView) {
-      const { content } = getModule([ 'content', 'hiddenOnMobileStore' ], false);
-      const { x, y, width, height } = document.querySelector(`.${content.replace(/ /g, '.')} > * + *`).getBoundingClientRect();
-      this.devPortalView.setBounds({
-        x,
-        y,
-        width,
-        height
-      });
-    }
   }
 };
