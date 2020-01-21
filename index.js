@@ -1,6 +1,5 @@
-const { React, getModule, constants: { MarketingURLs: { DEVELOPER_PORTAL } }, instance: { cache: moduleCache } } = require('powercord/webpack');
+const { React, getModule, getModuleByDisplayName, constants: { MarketingURLs: { DEVELOPER_PORTAL } } } = require('powercord/webpack');
 const { Plugin } = require('powercord/entities');
-const { waitFor, getOwnerInstance } = require('powercord/util');
 const { inject, uninject } = require('powercord/injector');
 
 module.exports = class InAppDevPortal extends Plugin {
@@ -20,10 +19,8 @@ module.exports = class InAppDevPortal extends Plugin {
   }
 
   async _injectDevPortal () {
-    const PrivateChannel = Object.values(moduleCache).find(m => m.exports && m.exports.LinkButton).exports;
-    const { privateChannels } = await getModule([ 'privateChannels' ]);
-    const ownerInstance = getOwnerInstance(await waitFor(`.${privateChannels.replace(/ /g, '.')}`));
-    const PrivateChannelsList = ownerInstance._reactInternalFiber.return.return.child.child.child.child.memoizedProps.children[1].type;
+    const PrivateChannel = await getModule([ 'LinkButton' ]);
+    const PrivateChannelsList = await getModuleByDisplayName('FluxContainer(PrivateChannelsList)');
     inject('devportal-item', PrivateChannelsList.prototype, 'render', (_, res) => {
       const selected = window.location.pathname === '/_powercord/inapp-devportal';
       const index = res.props.children.map(c => c && c.type && c.type.displayName && c.type.displayName.includes('FriendsButtonInner')).indexOf(true) + 1;
