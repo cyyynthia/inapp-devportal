@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2020 Bowser65
+ * Licensed under the Open Software License version 3.0
+ */
+
 const { React, getModule, getModuleByDisplayName, constants: { MarketingURLs: { DEVELOPER_PORTAL } } } = require('powercord/webpack');
 const { Plugin } = require('powercord/entities');
 const { inject, uninject } = require('powercord/injector');
